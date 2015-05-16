@@ -16,7 +16,7 @@ enum Keys{ A, S, D, W, SPACE };
 int res_x = 1280;
 int res_y = 820;
 int pos_x = 0;
-int checkpoint = 0;
+int checkpoint = 8800;
 int blockNum = 0;
 const int num_proj = 5;
 int level = 3;
@@ -1180,8 +1180,51 @@ void initblock(block B[], int size)
 			B[i].y = 300;
 		}
 
+		B[95].x = 3100; B[95].y = 550;
+		B[96].x = 9000; B[96].y = 760;
+		B[97].x = 9060; B[97].y = 700;
+		B[131].x = 8700; B[131].y = 500;
+		B[132].x = 8640; B[132].y = 500;
 
 
+		B[98].x = 9060;
+		for (int i = 99; i <= 104; i++)
+		{
+			B[i].x = B[i - 1].x + box_width + 5;
+		}
+
+		for (int i = 99; i <= 104; i++)
+		{
+			B[i].y = 640;
+		}
+
+
+		B[105].x = 9700;
+		for (int i = 106; i <= 113; i++)
+		{
+			B[i].x = B[i - 1].x + box_width + 5;
+		}
+
+		for (int i = 106; i <= 113; i++)
+		{
+			B[i].y = 640;
+		}
+		B[113].x = 10180; B[113].y = 700;
+		B[114].x = 10240; B[114].y = 760;
+
+
+		B[116].x = 9200;
+		for (int i = 117; i <= 128; i++)
+		{
+			B[i].x = B[i - 1].x + box_width + 5;
+		}
+
+		for (int i = 117; i <= 128; i++)
+		{
+			B[i].y = 350;
+		}
+		B[129].x = 9480; B[129].y = 700;
+		B[130].x = 9540; B[130].y = 760;
 	}//END OF STAGE 3
 }
 void initPipe(Pipe pipes[], int size)
@@ -1267,7 +1310,7 @@ void initPipe(Pipe pipes[], int size)
 		/*pipes[4].x = 8800;			pipes[4].y = 450;*/
 
 		pipes[5].x = 7730;			pipes[5].y = 550;
-		pipes[6].x = 8800;			pipes[6].y = 450;
+		//pipes[6].x = 8800;			pipes[6].y = 450;
 
 
 
@@ -1465,6 +1508,18 @@ void initSpike(spike spikes[], int size)
 		spikes[83].x = 7955; spikes[83].y = 280; spikes[83].l = true;
 		spikes[84].x = 8200; spikes[84].y = 195;
 		spikes[85].x = 8400; spikes[85].y = 195;
+		spikes[86].x = 9150; spikes[86].y = 535;
+		spikes[87].x = 9065; spikes[87].y = 593;
+		spikes[88].x = 9400; spikes[88].y = 535;
+		spikes[89].x = 9800; spikes[89].y = 535;
+		spikes[90].x = 10000; spikes[90].y = 535;
+		spikes[91].x = 9550; spikes[91].y = 390;  spikes[91].d = true;
+		spikes[92].x = 9610; spikes[92].y = 390; spikes[92].d = true;
+		spikes[93].x = 9670; spikes[93].y = 390; spikes[93].d = true;
+		spikes[94].x = 9490; spikes[94].y = 595;
+		spikes[95].x = 9300; spikes[95].y = 390; spikes[95].d = true;
+		spikes[96].x = 8720; spikes[96].y = 395;
+		spikes[97].x = 9550; spikes[97].y = 653;
 		//*/
 	}//END OF STAGE 3
 
@@ -1543,9 +1598,9 @@ void CreateEnemies(enemies guys[], int size, int counter){
 		guys[11].x = 8000;				guys[11].y = 500;
 		guys[12].x = 6800;				guys[12].y = 400;
 		guys[13].x = 9500;				guys[13].y = 360;
-		guys[14].x = 8900;				guys[14].y = 395;
-		/*	guys[15].x = 500;				guys[15].y = 500;
-		guys[16].x = 500;				guys[16].y = 500;
+		guys[14].x = 8900;				guys[14].y = 400;
+		//	guys[15].x = 9540;				guys[15].y = res_y-115;
+		/*	guys[16].x = 500;				guys[16].y = 500;
 		guys[17].x = 500;				guys[17].y = 500;
 		guys[18].x = 500;				guys[18].y = 500;
 		*/
@@ -1571,8 +1626,8 @@ void CreateEnemies(enemies guys[], int size, int counter){
 		guys[0].x = 500;				guys[0].y = res_y - 115;
 		guys[1].x = 2400;               guys[1].y = res_y - 115;
 		guys[2].x = 1500;				guys[2].y = 340;
-		//guys[3].x = 270;				guys[3].y = 200;
-		//guys[4].x = 2250;				guys[4].y = res_y - 115;
+		guys[3].x = 10100;				guys[3].y = 550;
+		guys[4].x = 8500;				guys[4].y = res_y - 115;
 		guys[5].x = 3450;				guys[5].y = 400;
 		guys[6].x = 3850;				guys[6].y = 300;
 		guys[7].x = 5000;				guys[7].y = 455;
@@ -1580,9 +1635,10 @@ void CreateEnemies(enemies guys[], int size, int counter){
 		guys[9].x = 6850;				guys[9].y = 465;
 		guys[10].x = 7000;				guys[10].y = 250;
 		guys[11].x = 8100;				guys[11].y = 170;
-		guys[12].x = 8600;				guys[12].y = 380;
-		/*	guys[13].x = 9500;				guys[13].y = 360;
-		guys[14].x = 8900;				guys[14].y = 395;*/
+		guys[12].x = 8800;				guys[12].y = 395;
+		guys[15].x = 9650;				guys[15].y = res_y - 115;
+		guys[16].x = 9200;				guys[16].y = 250;
+		guys[17].x = 9550;				guys[17].y = 470;
 	}//END OF STAGE 3
 }
 
