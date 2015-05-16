@@ -12,7 +12,7 @@
 
 
 
-enum Keys{ A, S, D, W, SPACE, L };
+enum Keys{ A, S, D, W, SPACE };
 int res_x = 1280;
 int res_y = 820;
 int pos_x = 0;
@@ -38,6 +38,7 @@ struct person{
 }player;
 int deathDelay = 0;
 int c = 0;
+int wait = 0;
 int box_width = player.r * 2 + 15;
 int box_bounds = box_width;
 int pipe_width = 120;
@@ -197,6 +198,22 @@ int imageWALL2QHeight = 0;
 int imageWALL2QWidth = 0;
 
 
+ALLEGRO_BITMAP *loadscreen1 = NULL;
+int screen1H = 0;
+int screen1W = 0;
+
+ALLEGRO_BITMAP *loadscreen2 = NULL;
+int screen2H = 0;
+int screen2W = 0;
+
+ALLEGRO_BITMAP *loadscreen3 = NULL;
+int screen3H = 0;
+int screen3W = 0;
+
+
+ALLEGRO_BITMAP *deadimage = NULL;
+ALLEGRO_BITMAP *gameover = NULL;
+ALLEGRO_BITMAP *gameoverFlash = NULL;
 
 
 
@@ -215,8 +232,10 @@ int main(void)
 	int loadDelay = 0;
 	bool loadGame = false;
 	bool nextLevel = false;
-	int cheatTimer = 0;
-	bool cheatEnabled = false;
+	bool moveR = false;
+	bool moveL = false;
+	bool moveU = false;
+	bool dying = false;
 
 	int imageHeight = 0;
 	int imageWidth = 0;
@@ -230,7 +249,7 @@ int main(void)
 	bool jump_h = false;
 	bool feet_check = true;
 	int jump_cnt = 0;
-	bool keys[6] = { false, false, false, false, false, false };
+	bool keys[5] = { false, false, false, false, false };
 	int const FPS = 60;
 	bool Gamerunning = true;
 	bool deathsound = true;
@@ -247,7 +266,16 @@ int main(void)
 	SetEnemies(guys, num_enemies);
 
 
+	//////////////////////////////////////////////ANIMATION////////////////////////////////////////////////////
+	const int maxFrame = 4;
+	int currentF = 0;
+	int Fcount = 0;
+	int FDelay = 6;
 
+
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -270,6 +298,11 @@ int main(void)
 	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
 	ALLEGRO_TIMER *timer = NULL;
 	ALLEGRO_BITMAP *image = NULL;
+	ALLEGRO_BITMAP *imageRIGHT[maxFrame];
+	ALLEGRO_BITMAP *imageLEFT[maxFrame];
+	ALLEGRO_BITMAP *imageUP[2];
+
+
 
 	if (!al_init())										//initialize Allegro
 		return -1;
@@ -326,6 +359,27 @@ int main(void)
 	WALLQimage = al_load_bitmap("Luigi4Q.jpg");//pause screen QUIT
 	WALL2Qimage = al_load_bitmap("Luigi3Q.jpg");//start screen QUIT
 
+	loadscreen1 = al_load_bitmap("screen1.jpg");
+	loadscreen2 = al_load_bitmap("screen2.jpg");
+	loadscreen3 = al_load_bitmap("screen3.jpg");
+	gameover = al_load_bitmap("gameover.jpg");
+	gameoverFlash = al_load_bitmap("gameoverFlash.jpg");
+
+
+	deadimage = al_load_bitmap("died.png");
+
+	imageRIGHT[0] = al_load_bitmap("LW1.png");
+	imageRIGHT[1] = al_load_bitmap("LW2.png");
+	imageRIGHT[2] = al_load_bitmap("LW3.png");
+	imageRIGHT[3] = al_load_bitmap("LW4.png");
+
+	imageLEFT[3] = al_load_bitmap("LW1.png");
+	imageLEFT[2] = al_load_bitmap("LW2.png");
+	imageLEFT[1] = al_load_bitmap("LW3.png");
+	imageLEFT[0] = al_load_bitmap("LW4.png");
+
+	imageUP[0] = al_load_bitmap("LJ1.png");
+	imageUP[1] = al_load_bitmap("LJ2.png");
 
 
 
@@ -373,6 +427,15 @@ int main(void)
 	imageWALL2QWidth = al_get_bitmap_width(WALL2Qimage);
 	imageWALL2QHeight = al_get_bitmap_height(WALL2Qimage);
 
+	screen1W = al_get_bitmap_width(loadscreen1);
+	screen1H = al_get_bitmap_height(loadscreen1);
+
+	screen2W = al_get_bitmap_width(loadscreen2);
+	screen2H = al_get_bitmap_height(loadscreen2);
+
+	screen3W = al_get_bitmap_width(loadscreen3);
+	screen3H = al_get_bitmap_height(loadscreen3);
+
 
 
 
@@ -384,12 +447,13 @@ int main(void)
 
 
 
-	al_set_target_bitmap(image);
+	//al_set_target_bitmap(image);
 
 
 	al_set_target_bitmap(al_get_backbuffer(display));
 	event_queue = al_create_event_queue();
 	ALLEGRO_FONT *font12 = al_load_font("emulogic.ttf", 20, 0);
+	ALLEGRO_FONT *font11 = al_load_font("emulogic.ttf", 85, 0);
 	ALLEGRO_FONT *font13 = al_load_font("tlpsmb.ttf", 32, 0);
 	//allows for fonts...
 	al_register_event_source(event_queue, al_get_keyboard_event_source());	//register keyboard to events.
@@ -404,8 +468,7 @@ int main(void)
 	{
 		ALLEGRO_EVENT ev;
 		al_wait_for_event(event_queue, &ev);
-		if (!deathPause)
-			al_play_sample_instance(songInstance);
+		al_play_sample_instance(songInstance);
 
 
 		if (ev.type == ALLEGRO_EVENT_KEY_DOWN)
@@ -420,6 +483,11 @@ int main(void)
 					if (!deathPause&&!nextLevel)
 					{
 						fall = false;
+						moveU = true;
+						moveR = false;
+						moveL = false;
+						dying = false;
+
 						if (feet_check)
 						{
 							al_play_sample(jumping, 1.5, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo3);
@@ -431,26 +499,33 @@ int main(void)
 				else{ if (pointer > 400)pointer -= 50; }
 				break;
 			case ALLEGRO_KEY_DOWN:
-
 				if (!gameStart){
 					if (pointer < 500)
 						pointer += 50;
 				}break;
 			case ALLEGRO_KEY_RIGHT:
-				if (!deathPause&&!nextLevel)
+				if (!deathPause&&!nextLevel){
+					moveR = true;
+					moveL = false;
+					moveU = false;
+					dying = false;
 					keys[D] = true;
+				}
 				break;
 			case ALLEGRO_KEY_LEFT:
 				if (!deathPause&&!nextLevel)
+				{
+					moveL = true;
+					moveR = false;
+					moveU = false;
+					dying = false;
 					keys[A] = true;
+				}
 				break;
-			case ALLEGRO_KEY_L:
-				if (!cheatEnabled)
-					keys[L] = true;
-				break;
+
 			case ALLEGRO_KEY_SPACE:
 				if (gameStart){
-					if (!deathPause&&!nextLevel){
+					if (!deathPause){
 						keys[SPACE] = true;
 						shoot(proj, num_proj);
 						//if (stage)
@@ -477,21 +552,26 @@ int main(void)
 				gameStart = false;
 				break;
 			case ALLEGRO_KEY_L:
-				keys[L] = false;
+				resize(50);
 				break;
 
 			case ALLEGRO_KEY_UP:
 
 				if (!jump_h&&!feet_check)
+				{
+					moveU = false;
+
 					fall = true;
-				//				al_stop_sample(foo3);
+				}
 				break;
 
 			case ALLEGRO_KEY_RIGHT:
 				keys[D] = false;
+				moveR = false;
 				break;
 			case ALLEGRO_KEY_LEFT:
 				keys[A] = false;
+				moveL = false;
 				break;
 			case ALLEGRO_KEY_SPACE:
 				if (gameStart){
@@ -506,10 +586,10 @@ int main(void)
 							ISEEDEADPEOPLE(guys, num_enemies);
 							deathPause = false;
 							deathsound = true;
-							//somehow stop the death music if we can <-------------------------------------------------------------------------------------------------------
 						}
 						if (player.lives == 0)
 						{
+
 							al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);//SOME GAME OVER MESSSAGE HERE <----------------------------------------------------------------------------------------------------
 							stage = false;
 							if (gamePause)
@@ -526,10 +606,10 @@ int main(void)
 							gamePause = false;
 							shot = false;
 							Apocalypse(guys, num_enemies);
-							deathPause = false;
-							player.score = 0;
-							temp = 0;
-
+							//al_draw_scaled_bitmap(loadscreen1, 0, 0, screen1W, screen1H, 0, 0, screen1W, screen1H, 0);
+							//al_draw_scaled_bitmap(gameover, 0, 0, 1280, 820, 0, 0, 1280, 820, 0); ------------------this is the game over screen
+							//al_draw_scaled_bitmap(gameoverFlash, 0, 0, 1280, 820, 0, 0, 1280, 820, 0); ------------------this is the game over screen with the press space to continue now put a delay and make them flash wherever you put the game over screen
+							//al_draw_textf(font11, al_map_rgb(255, 255, 255), 825, 360, 0, "%d", player.lives);
 							//SOME LOADING SCREEN HERE <---------------------------------------------------------------------------
 						}
 						//al_stop_sample(foo);
@@ -544,25 +624,7 @@ int main(void)
 						gamePause = true;
 					}
 					else if (pointer == 450)
-					{
-						if (!start){
-							level = 1;
-
-							level = 1;
-
-							pos_x = 0;
-							checkpoint = 0;
-							player.lives = 5;
-							gamePause = true;
-							gameStart = true;
-							shot = false;
-							Apocalypse(guys, num_enemies);
-							deathPause = false;
-							player.score = 0;
-							temp = 0;
-							pointer = 400;
-						}
-						//RUN THE DEMO HERE <------------------------------------------------------------------------------------------------------------
+					{//RUN THE DEMO HERE <------------------------------------------------------------------------------------------------------------
 					}
 					else if (pointer == 500)
 					{
@@ -583,6 +645,9 @@ int main(void)
 		else if (ev.type == ALLEGRO_EVENT_TIMER){		//timer starting
 
 
+
+
+
 			if (pos_x > temp)
 			{
 				player.score++;
@@ -593,22 +658,6 @@ int main(void)
 
 			if (gameStart){
 
-				if (keys[L])//CHEAT <--- +100 LIVES
-				{
-
-					cheatTimer++;
-					if (cheatTimer == 200)
-					{
-						player.lives += 100;
-						cheatEnabled = true;
-
-					}
-
-				}if (!keys[L] && cheatTimer > 0)
-				{
-					cheatTimer -= 2;
-					if (cheatTimer <= 0){ cheatEnabled = false; }
-				}
 				// JUMPING....
 				if (!feet_check && !jump_h&&!block_limit(blocks, num_blocks)){
 
@@ -707,7 +756,6 @@ int main(void)
 					nextLevel = true;
 					keys[A] = false;
 					keys[D] = false;
-					temp = 0;
 				}
 				if (nextLevel)
 				{
@@ -773,12 +821,13 @@ int main(void)
 
 				if (CollideEnemy(guys, num_enemies, c) || spikeCollide(spikes, num_spikes))//DEATH OF CHARA
 				{
-
+					al_stop_sample_instance(songInstance);
 					if (deathsound)
 					{
-						al_stop_sample_instance(songInstance);
+
 						al_play_sample(die, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo5);
 						deathsound = false;
+
 					}
 
 
@@ -789,16 +838,65 @@ int main(void)
 				}
 				if (!deathPause)
 				{
-					//	stage = false;
-					al_draw_scaled_bitmap(image, 0, 0, imageWidth, imageHeight, player.x - player.r, player.y - player.r, imageWidth*0.6, imageHeight*0.6, 0);
+					if (!moveL &&!moveR && !moveU && !dying)
+						al_draw_scaled_bitmap(imageRIGHT[3], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
+
+					if (moveR)
+					{
+						if (++Fcount >= FDelay)
+						{
+							if (++currentF >= maxFrame)
+							{
+								currentF = 0;
+								Fcount = 0;
+							}
+						}
+						if (feet_check)
+							al_draw_scaled_bitmap(imageRIGHT[currentF], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
+						else
+							al_draw_scaled_bitmap(imageUP[1], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.7, 128 * 0.7, 0);
+					}
+					if (moveL)
+					{
+						if (++Fcount >= FDelay)
+						{
+							if (++currentF >= maxFrame)
+							{
+								currentF = 0;
+								Fcount = 0;
+							}
+						}
+
+						if (feet_check)
+							al_draw_scaled_bitmap(imageLEFT[currentF], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
+						else
+							al_draw_scaled_bitmap(imageUP[1], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.7, 128 * 0.7, 0);
+					}
+
+					if (moveU)
+					{
+						if (!feet_check)
+						{
+							al_draw_scaled_bitmap(imageUP[1], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.7, 128 * 0.7, 0);
+						}
+						else
+						{
+							al_draw_scaled_bitmap(imageRIGHT[3], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
+							moveU = false;
+						}
+
+					}
+
 				}
 				if (deathPause)
 				{
 
 					deathDelay++;
 					if (deathDelay % 10 == 0)
-						al_draw_scaled_bitmap(image, 0, 0, imageWidth, imageHeight, player.x - player.r, player.y - player.r, imageWidth*0.6, imageHeight*0.6, 0);
+					{
+						al_draw_scaled_bitmap(deadimage, 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
 
+					}
 				}
 
 
@@ -816,16 +914,17 @@ int main(void)
 				//al_draw_filled_rectangle(0, res_y - 50, res_x, res_y, al_map_rgb(139, 69, 19));//Ground		
 
 				//al_draw_filled_circle(player.x, player.y, player.r, al_map_rgb(0, 128, 0));//player
-				if (!deathPause)
-					al_draw_scaled_bitmap(image, 0, 0, imageWidth, imageHeight, player.x - player.r, player.y - player.r, imageWidth*0.6, imageHeight*0.6, 0);
+				if (!deathPause){
+					//al_draw_scaled_bitmap(image, 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
+
+				}
 
 				al_draw_textf(font12, al_map_rgb(200, 0, 0), 30, 20, 0, "LIVES:  %d", player.lives);
 				al_draw_textf(font12, al_map_rgb(200, 0, 0), 29, 40, 0, "SCORE:  %d", player.score);
 				al_draw_textf(font12, al_map_rgb(210, 0, 0), 29, 60, 0, "POSITION:    %d", pos_x);
 				//al_draw_textf(font12, al_map_rgb(210, 0, 0), 29, 80, 0, "g    %d", g);
 				//al_draw_textf(font12, al_map_rgb(210, 0, 0), 29, 100, 0, "Width    %d", imageBGWidth);
-				if (cheatEnabled)
-					al_draw_text(font12, al_map_rgb(255, 0, 0), 200, res_y / 2, 0, "CHEAT ENABLED");
+
 
 
 				drawproj(proj, num_proj);
@@ -833,9 +932,16 @@ int main(void)
 				{
 
 					if (level == 2)
-						al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(2, 220, 0));//PUT THE PICTURE HERE LUUUUSHHHHHHHHHHHHHHHHH <-----------------------------------------------------------------------------------------------------------------------------
+					{
+						//al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(2, 220, 0));//PUT THE PICTURE HERE LUUUUSHHHHHHHHHHHHHHHHH <-----------------------------------------------------------------------------------------------------------------------------
+						al_draw_scaled_bitmap(loadscreen2, 0, 0, screen2W, screen2H, 0, 0, screen2W, screen2H, 0);
+						al_draw_textf(font11, al_map_rgb(255, 255, 255), 825, 360, 0, "%d", player.lives);
+					}
 					if (level == 3)
-						al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(2, 0, 220));//PUT THE PICTURE HERE LUUUUSHHHHHHHHHHHHHHHHH <-----------------------------------------------------------------------------------------------------------------------------
+
+						al_draw_scaled_bitmap(loadscreen3, 0, 0, screen3W, screen3H, 0, 0, screen3W, screen3H, 0);
+					al_draw_textf(font11, al_map_rgb(255, 255, 255), 825, 360, 0, "%d", player.lives);
+					//al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(2, 0, 220));//PUT THE PICTURE HERE LUUUUSHHHHHHHHHHHHHHHHH <-----------------------------------------------------------------------------------------------------------------------------
 				}
 				al_flip_display();
 
@@ -862,7 +968,6 @@ int main(void)
 			//al_draw_text(font13, al_map_rgb(255, 255, 255), 150, 500, 0, "END GAME");
 			al_draw_text(font12, al_map_rgb(255, 255, 255), 100, pointer, 0, ">");
 
-
 			if (loadDelay<100)
 			{
 				loadDelay++;
@@ -885,7 +990,10 @@ int main(void)
 	}
 
 
-
+	for (int i = 0; i < maxFrame; i++)
+	{
+		al_destroy_bitmap(imageRIGHT[i]);
+	}
 	al_destroy_sample(shot1);
 	al_destroy_sample(boom);
 	al_destroy_sample(song);
@@ -1129,7 +1237,7 @@ void initblock(block B[], int size)
 			count++;
 
 			if (i >= 2000 && i <= 2500)                             //FALLS THROUGH THESE BLOCKS !!!!!!!!! 3RD SET (HIGHEST)
-				B[count].y = 330;
+				B[count].y = 300;
 		}
 
 		int countA = 0;
@@ -1164,131 +1272,14 @@ void initblock(block B[], int size)
 			B[i].y = res_y - 155;
 		}
 
-		B[52].x = 3950;				B[52].y = 400;
-		B[53].x = 4010;				B[53].y = 400;
-		B[54].x = 4500;	            B[54].y = 550;
-		B[55].x = 4550;				B[55].y = 550;
-		B[56].x = 4600;				B[56].y = 550;
+		B[52].x = 3980;				B[52].y = 400;
+		B[53].x = 4030;				B[53].y = 400;
+		//B[31].x = 9595;	            B[31].y = 300;
+		//B[32].x = 9400;				B[32].y = 550;
+		//B[33].x = 9550;				B[33].y = 600;
+		//B[34].x = 9600;				B[34].y = 600;
+		//B[35].x = 9650;	            B[35].y = 300;
 
-		B[57].x = 5100;
-		for (int i = 58; i <= 62; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 58; i <= 62; i++)
-		{
-			B[i].y = 410;
-		}
-
-
-		B[63].x = 5300;
-		for (int i = 64; i <= 67; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 64; i <= 67; i++)
-		{
-			B[i].y = 650;
-		}
-
-
-
-
-		B[68].x = 5660;				B[68].y = 760;
-		B[69].x = 5600;	            B[69].y = 710;
-		B[70].x = 5800;				B[70].y = 450;
-
-
-		B[71].x = 6350;
-		for (int i = 72; i <= 74; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 72; i <= 74; i++)
-		{
-			B[i].y = 500;
-		}
-
-
-		B[78].x = 6250;
-		for (int i = 74; i <= 76; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 74; i <= 76; i++)
-		{
-			B[i].y = 250;
-		}
-		B[78].x = 6470; B[78].y = 190;
-		B[79].x = 6410; B[79].y = 140;
-		B[80].x = 7100; B[80].y = 550;
-		B[81].x = 7430; B[81].y = 350;
-
-		B[91].x = 7700; B[91].y = 450;
-		B[92].x = 7760; B[92].y = 450;
-		B[93].x = 7820; B[93].y = 450;
-		B[94].x = 7880; B[94].y = 450;
-
-		B[82].x = 8000;
-		for (int i = 83; i <= 90; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 83; i <= 90; i++)
-		{
-			B[i].y = 300;
-		}
-
-		B[95].x = 3100; B[95].y = 550;
-		B[96].x = 9000; B[96].y = 760;
-		B[97].x = 9060; B[97].y = 700;
-		B[131].x = 8700; B[131].y = 500;
-		B[132].x = 8640; B[132].y = 500;
-
-
-		B[98].x = 9060;
-		for (int i = 99; i <= 104; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 99; i <= 104; i++)
-		{
-			B[i].y = 640;
-		}
-
-
-		B[105].x = 9700;
-		for (int i = 106; i <= 113; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 106; i <= 113; i++)
-		{
-			B[i].y = 640;
-		}
-		B[113].x = 10180; B[113].y = 700;
-		B[114].x = 10240; B[114].y = 760;
-
-
-		B[116].x = 9200;
-		for (int i = 117; i <= 128; i++)
-		{
-			B[i].x = B[i - 1].x + box_width + 5;
-		}
-
-		for (int i = 117; i <= 128; i++)
-		{
-			B[i].y = 350;
-		}
-		B[129].x = 9480; B[129].y = 700;
-		B[130].x = 9540; B[130].y = 760;
 	}//END OF STAGE 3
 }
 void initPipe(Pipe pipes[], int size)
@@ -1365,17 +1356,12 @@ void initPipe(Pipe pipes[], int size)
 			pipes[i].y = 0;
 		}
 
-		pipes[0].x = 2900;         	pipes[0].y = 250;      //CHANGE Y TO 250 ONCE BLOCKS ARE FIXED      
+		pipes[0].x = 2900;         	pipes[0].y = 450;      //CHANGE Y TO 250 ONCE BLOCKS ARE FIXED      
 		pipes[1].x = 4800;			pipes[1].y = 650;
-		pipes[2].x = 6000;			pipes[2].y = 400;
-
-
-		pipes[3].x = 6850;			pipes[3].y = 550;
-		/*pipes[4].x = 8800;			pipes[4].y = 450;*/
-
-		pipes[5].x = 7730;			pipes[5].y = 550;
-		//pipes[6].x = 8800;			pipes[6].y = 450;
-
+		pipes[2].x = 6000;			pipes[2].y = 450;
+		pipes[3].x = 7700;			pipes[3].y = 550;
+		pipes[4].x = 8800;			pipes[4].y = 450;
+		pipes[5].x = 10000;			pipes[5].y = 550;
 
 
 	}//END OF STAGE 3
@@ -1464,14 +1450,14 @@ void initSpike(spike spikes[], int size)
 
 		int A = 25;
 		for (int i = 4250; i <= 10000; i += spike_width * 2)
-		if ((i <= 4790 || i >= 4800 + pipe_width) && (i <= 6000 || i >= 6000 + pipe_width) && (i <= 7700 || i >= 7700 + pipe_width) && (i <= 8800 || i >= 8800 + pipe_width) && (i <= 10000 || i >= 10000 + pipe_width))
+			if ((i <= 4790 || i >= 4800 + pipe_width) && (i <= 6000 || i >= 6000 + pipe_width) && (i <= 7700 || i >= 7700 + pipe_width) && (i <= 8800 || i >= 8800 + pipe_width) && (i <= 10000 || i >= 10000 + pipe_width))
 
-		{
+			{
 
 			spikes[A].x = i;
 			spikes[A].y = 720;
 			A++;
-		}
+			}
 		////int B = 60;
 		////for (int i = 7700+pipe_width; i <= 8800; i += spike_width * 2)
 		////	//if ((i < 7030 || i >7030 + pipe_width) && (i < 8200 || i >= 8200 + pipe_width))
@@ -1524,11 +1510,11 @@ void initSpike(spike spikes[], int size)
 
 		spikes[0].y = 528;
 		spikes[0].x = 1518; spikes[0].l = true;
-		spikes[1].x = 1800;
+		spikes[1].x = 1815;
 		spikes[1].y = 445;
 		spikes[2].x = 1400; spikes[2].d = true;
 		spikes[2].y = 390;
-		spikes[3].x = 2108; spikes[3].y = 370; spikes[3].d = true;
+		spikes[3].x = 2108; spikes[3].y = 340; spikes[3].d = true;
 		spikes[4].x = 2155; spikes[4].y = 590; spikes[4].r = true;
 		spikes[5].x = 3370; spikes[5].y = 345;
 
@@ -1545,46 +1531,19 @@ void initSpike(spike spikes[], int size)
 		}
 
 
+		/*	spikes[6].x = 3305;
+		spikes[7].x = 3400;
+		spikes[8].x = 3600;
+		spikes[9].x = 3700;
+		spikes[10].x = 3800;
+		spikes[11].x = 850;
+		spikes[12].x = 950;
+		spikes[13].x = 1200;
+		spikes[14].x = 2000;
+		spikes[15].x = 1820;
+		spikes[6].y = 445;
 
-
-		spikes[25].x = 4560; spikes[25].y = 445;
-		//	spikes[26].x = 2000 ; spikes[26].y = 315; spikes[26].l = true;
-		spikes[27].x = 4950; spikes[27].y = spikes[28].y = spikes[29].y = spikes[30].y = res_y - 100;
-		spikes[28].x = 5000;
-		spikes[29].x = 5050;
-		spikes[30].x = 5100;
-		spikes[31].x = 5058; spikes[31].y = 390; spikes[31].l = true;
-		spikes[32].x = 5365; spikes[32].y = 545;
-
-		int  count1 = 33;
-		for (int i = 6000 + pipe_width; i <= 7700; i += spike_width * 2)
-		if ((i < 7700 || i >= 7700 + pipe_width) && (i < 6850 || i >= 6850 + pipe_width))
-		{
-			spikes[count1].x = i;
-			spikes[count1].y = 720;
-			count1++;
-		}
-
-
-		spikes[80].x = 6538; spikes[80].y = 290; spikes[80].d = true;
-		spikes[81].x = 7705; spikes[81].y = 345;
-		spikes[82].x = 7895; spikes[82].y = 345;
-		spikes[83].x = 7955; spikes[83].y = 280; spikes[83].l = true;
-		spikes[84].x = 8200; spikes[84].y = 195;
-		spikes[85].x = 8400; spikes[85].y = 195;
-		spikes[86].x = 9150; spikes[86].y = 535;
-		spikes[87].x = 9065; spikes[87].y = 593;
-		spikes[88].x = 9400; spikes[88].y = 535;
-		spikes[89].x = 9800; spikes[89].y = 535;
-		spikes[90].x = 10000; spikes[90].y = 535;
-		spikes[91].x = 9550; spikes[91].y = 390;  spikes[91].d = true;
-		spikes[92].x = 9610; spikes[92].y = 390; spikes[92].d = true;
-		spikes[93].x = 9670; spikes[93].y = 390; spikes[93].d = true;
-		spikes[94].x = 9490; spikes[94].y = 595;
-		spikes[95].x = 9300; spikes[95].y = 390; spikes[95].d = true;
-		spikes[96].x = 8720; spikes[96].y = 395;
-		spikes[97].x = 9550; spikes[97].y = 653;
-		//*/
+		*/
 	}//END OF STAGE 3
 
 }
@@ -1662,9 +1621,9 @@ void CreateEnemies(enemies guys[], int size, int counter){
 		guys[11].x = 8000;				guys[11].y = 500;
 		guys[12].x = 6800;				guys[12].y = 400;
 		guys[13].x = 9500;				guys[13].y = 360;
-		guys[14].x = 8900;				guys[14].y = 400;
-		//	guys[15].x = 9540;				guys[15].y = res_y-115;
-		/*	guys[16].x = 500;				guys[16].y = 500;
+		guys[14].x = 8900;				guys[14].y = 395;
+		/*	guys[15].x = 500;				guys[15].y = 500;
+		guys[16].x = 500;				guys[16].y = 500;
 		guys[17].x = 500;				guys[17].y = 500;
 		guys[18].x = 500;				guys[18].y = 500;
 		*/
@@ -1689,26 +1648,24 @@ void CreateEnemies(enemies guys[], int size, int counter){
 
 		guys[0].x = 500;				guys[0].y = res_y - 115;
 		guys[1].x = 2400;               guys[1].y = res_y - 115;
-		guys[2].x = 1500;				guys[2].y = 340;
-		guys[3].x = 10100;				guys[3].y = 550;
-		guys[4].x = 8500;				guys[4].y = res_y - 115;
+		guys[2].x = 1550;				guys[2].y = 340;
+		guys[3].x = 270;				guys[3].y = 200;
+		//guys[4].x = 2250;				guys[4].y = res_y - 115;
 		guys[5].x = 3450;				guys[5].y = 400;
 		guys[6].x = 3850;				guys[6].y = 300;
-		guys[7].x = 5000;				guys[7].y = 455;
-		guys[8].x = 5160;				guys[8].y = res_y - 115;
-		guys[9].x = 6850;				guys[9].y = 465;
-		guys[10].x = 7000;				guys[10].y = 250;
-		guys[11].x = 8100;				guys[11].y = 170;
-		guys[12].x = 8800;				guys[12].y = 395;
-		guys[15].x = 9650;				guys[15].y = res_y - 115;
-		guys[16].x = 9200;				guys[16].y = 250;
-		guys[17].x = 9550;				guys[17].y = 470;
+		guys[7].x = 5000;				guys[7].y = 550;
+		guys[8].x = 5800;				guys[8].y = 390;
+		guys[9].x = 9500;				guys[9].y = 495;
+		guys[10].x = 8300;				guys[10].y = 350;
+		guys[11].x = 8000;				guys[11].y = 500;
+		guys[12].x = 6800;				guys[12].y = 400;
+		guys[13].x = 9500;				guys[13].y = 360;
+		guys[14].x = 8900;				guys[14].y = 395;
 	}//END OF STAGE 3
 }
 
 
 //****************************************************************************************************************************************************
-
 
 
 
@@ -1754,11 +1711,11 @@ bool checkblock(block B[], int size)
 			if (B[i].x == player.x - j + pos_x)
 			{
 				for (int k = 0; k < player.jumpspeed; k++)
-				if (player.feet == B[i].y + k - (player.jumpspeed * 9))
-				{
+					if (player.feet == B[i].y + k - (player.jumpspeed * 9))
+					{
 					check = true;
 					blockNum = i;
-				}
+					}
 			}
 
 		}
@@ -1772,13 +1729,13 @@ bool box_right(block B[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-		if (B[i].x == player.x + player.r + pos_x - k)
-		{
+			if (B[i].x == player.x + player.r + pos_x - k)
+			{
 			for (int j = 0; j<box_width; j++)
-			if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
-				check = false;
+				if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
+					check = false;
 
-		}
+			}
 	}
 	return check;
 }
@@ -1789,13 +1746,13 @@ bool box_left(block B[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-		if (B[i].x + box_width == player.x - player.r + pos_x + k)
-		{
+			if (B[i].x + box_width == player.x - player.r + pos_x + k)
+			{
 			for (int j = 0; j<box_width; j++)
-			if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
-				check = false;
+				if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
+					check = false;
 
-		}
+			}
 	}
 	return check;
 }
@@ -1865,11 +1822,11 @@ bool checkpipe(Pipe pipes[], int size)
 			if (pipes[i].x == (player.x) - j + pos_x)
 			{
 				for (int k = 0; k < player.jumpspeed; k++)
-				if (player.feet == pipes[i].y + k - (player.jumpspeed))
-				{
+					if (player.feet == pipes[i].y + k - (player.jumpspeed))
+					{
 					check = true;
 					blockNum = i;
-				}
+					}
 			}
 		}
 	}
@@ -1882,13 +1839,13 @@ bool pipe_right(Pipe pipes[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-		if (pipes[i].x == player.x + player.r + pos_x + k + 20)
-		{
+			if (pipes[i].x == player.x + player.r + pos_x + k + 20)
+			{
 			for (int j = 0; j<pipe_width; j++)
-			if (player.feet>pipes[i].y + j && (player.y + player.r) < res_y - 50)
-				check = false;
+				if (player.feet>pipes[i].y + j && (player.y + player.r) < res_y - 50)
+					check = false;
 
-		}
+			}
 	}
 	return check;
 }
@@ -1899,13 +1856,13 @@ bool pipe_left(Pipe pipes[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-		if (pipes[i].x + pipe_width == player.x - player.r + pos_x + k - 20)
-		{
+			if (pipes[i].x + pipe_width == player.x - player.r + pos_x + k - 20)
+			{
 			for (int j = 0; j<pipe_width; j++)
-			if (player.feet>pipes[i].y + j && (player.y + player.r) <  res_y - 50)
-				check = false;
+				if (player.feet>pipes[i].y + j && (player.y + player.r) <  res_y - 50)
+					check = false;
 
-		}
+			}
 	}
 	return check;
 }
@@ -1943,13 +1900,13 @@ bool spikeCollide(spike spikes[], int size)
 			if (spikes[i].x == player.x + player.r + pos_x - j)
 			{
 				for (int j = 0; j<spike_width; j++)
-				if (player.feet>spikes[i].y + j - (spikes[i].l * 20) - (spikes[i].r * 40) && (player.y + player.r) < spikes[i].y + 75 - (spikes[i].l * 50) - (spikes[i].r * 100))
-				{
+					if (player.feet>spikes[i].y + j - (spikes[i].l * 20) - (spikes[i].r * 40) && (player.y + player.r) < spikes[i].y + 75 - (spikes[i].l * 50) - (spikes[i].r * 100))
+					{
 
 					dead = true;
-					al_stop_sample_instance(songInstance);
+					//al_stop_sample_instance(songInstance);
 
-				}
+					}
 			}
 		}
 	}
@@ -2230,3 +2187,5 @@ void GenerateSTART(bool check)
 
 
 }
+
+
