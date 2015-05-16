@@ -12,14 +12,14 @@
 
 
 
-enum Keys{ A, S, D, W, SPACE };
+enum Keys{ A, S, D, W, SPACE, L };
 int res_x = 1280;
 int res_y = 820;
 int pos_x = 0;
-int checkpoint = 8800;
+int checkpoint = 0;
 int blockNum = 0;
 const int num_proj = 5;
-int level = 3;
+int level = 1;
 int g = 1;
 
 
@@ -31,8 +31,8 @@ struct person{
 	int j_height = res_y - 450;
 	int ms = 5;
 	int jumpspeed = 7;
-	int lives = 5;//********************************
-	int score = 0;//********************************
+	int lives = 5;
+	int score = 0;
 
 
 }player;
@@ -62,8 +62,6 @@ void Collision(Projectiles proj[], int sizeP, enemies guys[], int sizeE, int cou
 bool CollideEnemy(enemies guys[], int size, int counter);
 void ISEEDEADPEOPLE(enemies guys[], int size);
 void Apocalypse(enemies guys[], int size);
-
-
 
 int num_bg = 10;
 int num_ground = 10;
@@ -216,8 +214,9 @@ int main(void)
 	bool gameStart = false;
 	int loadDelay = 0;
 	bool loadGame = false;
-
-
+	bool nextLevel = false;
+	int cheatTimer = 0;
+	bool cheatEnabled = false;
 
 	int imageHeight = 0;
 	int imageWidth = 0;
@@ -231,7 +230,7 @@ int main(void)
 	bool jump_h = false;
 	bool feet_check = true;
 	int jump_cnt = 0;
-	bool keys[5] = { false, false, false, false, false };
+	bool keys[6] = { false, false, false, false, false, false };
 	int const FPS = 60;
 	bool Gamerunning = true;
 	bool deathsound = true;
@@ -405,8 +404,8 @@ int main(void)
 	{
 		ALLEGRO_EVENT ev;
 		al_wait_for_event(event_queue, &ev);
-		//	al_play_sample_instance(songInstance);
-
+		if (!deathPause)
+			al_play_sample_instance(songInstance);
 
 
 		if (ev.type == ALLEGRO_EVENT_KEY_DOWN)
@@ -414,39 +413,44 @@ int main(void)
 			switch (ev.keyboard.keycode)
 
 			{
+
 			case ALLEGRO_KEY_UP:
 
 				if (gameStart){
-					if (!deathPause)
+					if (!deathPause&&!nextLevel)
 					{
 						fall = false;
 						if (feet_check)
 						{
-							//			al_play_sample(jumping, 1.5, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo3);
+							al_play_sample(jumping, 1.5, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo3);
 
 							feet_check = false;
 						}
 					}
 				}
-				else{ if (pointer >400)pointer -= 50; }
+				else{ if (pointer > 400)pointer -= 50; }
 				break;
 			case ALLEGRO_KEY_DOWN:
+
 				if (!gameStart){
-					if (pointer <500)
+					if (pointer < 500)
 						pointer += 50;
 				}break;
 			case ALLEGRO_KEY_RIGHT:
-				if (!deathPause)
+				if (!deathPause&&!nextLevel)
 					keys[D] = true;
 				break;
 			case ALLEGRO_KEY_LEFT:
-				if (!deathPause)
+				if (!deathPause&&!nextLevel)
 					keys[A] = true;
 				break;
-
+			case ALLEGRO_KEY_L:
+				if (!cheatEnabled)
+					keys[L] = true;
+				break;
 			case ALLEGRO_KEY_SPACE:
 				if (gameStart){
-					if (!deathPause){
+					if (!deathPause&&!nextLevel){
 						keys[SPACE] = true;
 						shoot(proj, num_proj);
 						//if (stage)
@@ -464,7 +468,7 @@ int main(void)
 			{
 			case ALLEGRO_KEY_ESCAPE:
 
-				//	al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);
+				al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);
 				stage = false;
 				if (gamePause)
 				{
@@ -473,7 +477,7 @@ int main(void)
 				gameStart = false;
 				break;
 			case ALLEGRO_KEY_L:
-				resize(50);
+				keys[L] = false;
 				break;
 
 			case ALLEGRO_KEY_UP:
@@ -502,10 +506,11 @@ int main(void)
 							ISEEDEADPEOPLE(guys, num_enemies);
 							deathPause = false;
 							deathsound = true;
+							//somehow stop the death music if we can <-------------------------------------------------------------------------------------------------------
 						}
 						if (player.lives == 0)
 						{
-							//		al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);//SOME GAME OVER MESSSAGE HERE <----------------------------------------------------------------------------------------------------
+							al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);//SOME GAME OVER MESSSAGE HERE <----------------------------------------------------------------------------------------------------
 							stage = false;
 							if (gamePause)
 							{
@@ -521,6 +526,10 @@ int main(void)
 							gamePause = false;
 							shot = false;
 							Apocalypse(guys, num_enemies);
+							deathPause = false;
+							player.score = 0;
+							temp = 0;
+
 							//SOME LOADING SCREEN HERE <---------------------------------------------------------------------------
 						}
 						//al_stop_sample(foo);
@@ -535,7 +544,25 @@ int main(void)
 						gamePause = true;
 					}
 					else if (pointer == 450)
-					{//RUN THE DEMO HERE <------------------------------------------------------------------------------------------------------------
+					{
+						if (!start){
+							level = 1;
+
+							level = 1;
+
+							pos_x = 0;
+							checkpoint = 0;
+							player.lives = 5;
+							gamePause = true;
+							gameStart = true;
+							shot = false;
+							Apocalypse(guys, num_enemies);
+							deathPause = false;
+							player.score = 0;
+							temp = 0;
+							pointer = 400;
+						}
+						//RUN THE DEMO HERE <------------------------------------------------------------------------------------------------------------
 					}
 					else if (pointer == 500)
 					{
@@ -546,6 +573,7 @@ int main(void)
 			}
 
 		}
+
 		else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
 		{
 			Gamerunning = false;
@@ -565,6 +593,22 @@ int main(void)
 
 			if (gameStart){
 
+				if (keys[L])//CHEAT <--- +100 LIVES
+				{
+
+					cheatTimer++;
+					if (cheatTimer == 200)
+					{
+						player.lives += 100;
+						cheatEnabled = true;
+
+					}
+
+				}if (!keys[L] && cheatTimer > 0)
+				{
+					cheatTimer -= 2;
+					if (cheatTimer <= 0){ cheatEnabled = false; }
+				}
 				// JUMPING....
 				if (!feet_check && !jump_h&&!block_limit(blocks, num_blocks)){
 
@@ -656,20 +700,30 @@ int main(void)
 
 				if (pos_x >= 10100 && level <= 3){
 
+					shot = false;
+					Apocalypse(guys, num_enemies);
+					pos_x = 0;
+					level++;
+					nextLevel = true;
+					keys[A] = false;
+					keys[D] = false;
+					temp = 0;
+				}
+				if (nextLevel)
+				{
 					delay++;
-					if (delay < 100)
-					{
-						//ADD A LOADING SCREEN HERE LUSH<-------------------------------------------------------------------------------------------------------------------------
-					}
-					else
-					{
-						shot = false;
-						Apocalypse(guys, num_enemies);
-						pos_x = 0;
-						level++;
-						delay = 0;
 
+					if (delay > 200)
+					{
+
+
+
+						delay = 0;
+						nextLevel = false;
 					}
+
+
+
 				}
 				// END MOVES CHARACTER
 
@@ -722,8 +776,8 @@ int main(void)
 
 					if (deathsound)
 					{
-
-						//			al_play_sample(die, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo5);
+						al_stop_sample_instance(songInstance);
+						al_play_sample(die, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo5);
 						deathsound = false;
 					}
 
@@ -770,11 +824,19 @@ int main(void)
 				al_draw_textf(font12, al_map_rgb(210, 0, 0), 29, 60, 0, "POSITION:    %d", pos_x);
 				//al_draw_textf(font12, al_map_rgb(210, 0, 0), 29, 80, 0, "g    %d", g);
 				//al_draw_textf(font12, al_map_rgb(210, 0, 0), 29, 100, 0, "Width    %d", imageBGWidth);
-
+				if (cheatEnabled)
+					al_draw_text(font12, al_map_rgb(255, 0, 0), 200, res_y / 2, 0, "CHEAT ENABLED");
 
 
 				drawproj(proj, num_proj);
+				if (nextLevel)
+				{
 
+					if (level == 2)
+						al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(2, 220, 0));//PUT THE PICTURE HERE LUUUUSHHHHHHHHHHHHHHHHH <-----------------------------------------------------------------------------------------------------------------------------
+					if (level == 3)
+						al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(2, 0, 220));//PUT THE PICTURE HERE LUUUUSHHHHHHHHHHHHHHHHH <-----------------------------------------------------------------------------------------------------------------------------
+				}
 				al_flip_display();
 
 				al_clear_to_color(al_map_rgb(0, 191, 255));
@@ -792,13 +854,14 @@ int main(void)
 			if (gamePause)
 			{
 				stage = false;
-				//al_stop_sample_instance(songInstance);
+				al_stop_sample_instance(songInstance);
 				//al_draw_text(font13, al_map_rgb(255, 255, 255), 150, 400, 0, "RESUME GAME");
 				start = false;
 			}
 			//al_draw_text(font13, al_map_rgb(255, 255, 255), 150, 450, 0, "DEMO");
 			//al_draw_text(font13, al_map_rgb(255, 255, 255), 150, 500, 0, "END GAME");
 			al_draw_text(font12, al_map_rgb(255, 255, 255), 100, pointer, 0, ">");
+
 
 			if (loadDelay<100)
 			{
@@ -807,6 +870,7 @@ int main(void)
 				//al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(255, 0, 0));
 			}
 			else{ loadGame = false; }
+
 
 			al_flip_display();
 
@@ -822,11 +886,11 @@ int main(void)
 
 
 
-	//al_destroy_sample(shot1);
-	//al_destroy_sample(boom);
-	//al_destroy_sample(song);
-	//al_destroy_sample_instance(songInstance);
-	//al_destroy_display(display);
+	al_destroy_sample(shot1);
+	al_destroy_sample(boom);
+	al_destroy_sample(song);
+	al_destroy_sample_instance(songInstance);
+	al_destroy_display(display);
 }
 
 void resize(int r1){
@@ -1400,14 +1464,14 @@ void initSpike(spike spikes[], int size)
 
 		int A = 25;
 		for (int i = 4250; i <= 10000; i += spike_width * 2)
-			if ((i <= 4790 || i >= 4800 + pipe_width) && (i <= 6000 || i >= 6000 + pipe_width) && (i <= 7700 || i >= 7700 + pipe_width) && (i <= 8800 || i >= 8800 + pipe_width) && (i <= 10000 || i >= 10000 + pipe_width))
+		if ((i <= 4790 || i >= 4800 + pipe_width) && (i <= 6000 || i >= 6000 + pipe_width) && (i <= 7700 || i >= 7700 + pipe_width) && (i <= 8800 || i >= 8800 + pipe_width) && (i <= 10000 || i >= 10000 + pipe_width))
 
-			{
+		{
 
-				spikes[A].x = i;
-				spikes[A].y = 720;
-				A++;
-			}
+			spikes[A].x = i;
+			spikes[A].y = 720;
+			A++;
+		}
 		////int B = 60;
 		////for (int i = 7700+pipe_width; i <= 8800; i += spike_width * 2)
 		////	//if ((i < 7030 || i >7030 + pipe_width) && (i < 8200 || i >= 8200 + pipe_width))
@@ -1494,12 +1558,12 @@ void initSpike(spike spikes[], int size)
 
 		int  count1 = 33;
 		for (int i = 6000 + pipe_width; i <= 7700; i += spike_width * 2)
-			if ((i < 7700 || i >= 7700 + pipe_width) && (i < 6850 || i >= 6850 + pipe_width))
-			{
-				spikes[count1].x = i;
-				spikes[count1].y = 720;
-				count1++;
-			}
+		if ((i < 7700 || i >= 7700 + pipe_width) && (i < 6850 || i >= 6850 + pipe_width))
+		{
+			spikes[count1].x = i;
+			spikes[count1].y = 720;
+			count1++;
+		}
 
 
 		spikes[80].x = 6538; spikes[80].y = 290; spikes[80].d = true;
@@ -1648,6 +1712,7 @@ void CreateEnemies(enemies guys[], int size, int counter){
 
 
 
+
 //***************************************************************BLOCKS*******************************************************************************
 
 void create(block B[], int size)
@@ -1682,18 +1747,18 @@ bool block_limit(block B[], int size)
 bool checkblock(block B[], int size)
 {
 	bool check = false;
-	for (int i = 0; i < size; i++)
+	for (int i = -10; i < size; i++)
 	{
 		for (int j = -player.r; j < box_bounds * 2 - player.r + 3; j++)
 		{
 			if (B[i].x == player.x - j + pos_x)
 			{
 				for (int k = 0; k < player.jumpspeed; k++)
-					if (player.feet == B[i].y + k - (player.jumpspeed * 9))
-					{
-						check = true;
-						blockNum = i;
-					}
+				if (player.feet == B[i].y + k - (player.jumpspeed * 9))
+				{
+					check = true;
+					blockNum = i;
+				}
 			}
 
 		}
@@ -1707,13 +1772,13 @@ bool box_right(block B[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-			if (B[i].x == player.x + player.r + pos_x - k)
-			{
-				for (int j = 0; j<box_width; j++)
-					if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
-						check = false;
+		if (B[i].x == player.x + player.r + pos_x - k)
+		{
+			for (int j = 0; j<box_width; j++)
+			if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
+				check = false;
 
-			}
+		}
 	}
 	return check;
 }
@@ -1724,13 +1789,13 @@ bool box_left(block B[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-			if (B[i].x + box_width == player.x - player.r + pos_x + k)
-			{
-				for (int j = 0; j<box_width; j++)
-					if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
-						check = false;
+		if (B[i].x + box_width == player.x - player.r + pos_x + k)
+		{
+			for (int j = 0; j<box_width; j++)
+			if (player.feet>B[i].y - j && (player.y + player.r) < B[i].y)
+				check = false;
 
-			}
+		}
 	}
 	return check;
 }
@@ -1800,11 +1865,11 @@ bool checkpipe(Pipe pipes[], int size)
 			if (pipes[i].x == (player.x) - j + pos_x)
 			{
 				for (int k = 0; k < player.jumpspeed; k++)
-					if (player.feet == pipes[i].y + k - (player.jumpspeed))
-					{
-						check = true;
-						blockNum = i;
-					}
+				if (player.feet == pipes[i].y + k - (player.jumpspeed))
+				{
+					check = true;
+					blockNum = i;
+				}
 			}
 		}
 	}
@@ -1817,13 +1882,13 @@ bool pipe_right(Pipe pipes[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-			if (pipes[i].x == player.x + player.r + pos_x + k + 20)
-			{
-				for (int j = 0; j<pipe_width; j++)
-					if (player.feet>pipes[i].y + j && (player.y + player.r) < res_y - 50)
-						check = false;
+		if (pipes[i].x == player.x + player.r + pos_x + k + 20)
+		{
+			for (int j = 0; j<pipe_width; j++)
+			if (player.feet>pipes[i].y + j && (player.y + player.r) < res_y - 50)
+				check = false;
 
-			}
+		}
 	}
 	return check;
 }
@@ -1834,13 +1899,13 @@ bool pipe_left(Pipe pipes[], int size)
 	for (int i = 0; i < size; i++)
 	{
 		for (int k = 0; k < 10; k++)
-			if (pipes[i].x + pipe_width == player.x - player.r + pos_x + k - 20)
-			{
-				for (int j = 0; j<pipe_width; j++)
-					if (player.feet>pipes[i].y + j && (player.y + player.r) <  res_y - 50)
-						check = false;
+		if (pipes[i].x + pipe_width == player.x - player.r + pos_x + k - 20)
+		{
+			for (int j = 0; j<pipe_width; j++)
+			if (player.feet>pipes[i].y + j && (player.y + player.r) <  res_y - 50)
+				check = false;
 
-			}
+		}
 	}
 	return check;
 }
@@ -1878,13 +1943,13 @@ bool spikeCollide(spike spikes[], int size)
 			if (spikes[i].x == player.x + player.r + pos_x - j)
 			{
 				for (int j = 0; j<spike_width; j++)
-					if (player.feet>spikes[i].y + j - (spikes[i].l * 20) - (spikes[i].r * 40) && (player.y + player.r) < spikes[i].y + 75 - (spikes[i].l * 50) - (spikes[i].r * 100))
-					{
+				if (player.feet>spikes[i].y + j - (spikes[i].l * 20) - (spikes[i].r * 40) && (player.y + player.r) < spikes[i].y + 75 - (spikes[i].l * 50) - (spikes[i].r * 100))
+				{
 
-						dead = true;
-						//al_stop_sample_instance(songInstance);
+					dead = true;
+					al_stop_sample_instance(songInstance);
 
-					}
+				}
 			}
 		}
 	}
@@ -1918,7 +1983,7 @@ void drawproj(Projectiles proj[], int size)
 	}
 }
 void shoot(Projectiles proj[], int size){
-	//al_play_sample(shot1, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo);
+	al_play_sample(shot1, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo);
 
 	for (int i = 0; i < size; i++)
 	{
@@ -1961,7 +2026,7 @@ void HittingPipes(Projectiles proj[], int size, int sizeP, Pipe pipes[])
 				{
 					if (proj[j].x == (pipes[i].x - 20 - pos_x + k) && proj[j].y > pipes[i].y)
 					{
-						//	al_play_sample(bump, 1.4, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo4);
+						al_play_sample(bump, 1.4, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo4);
 						proj[j].live = false;
 
 					}
@@ -1982,7 +2047,7 @@ void HittingBlocks(Projectiles proj[], int size, int sizeB, block blocks[])
 				{
 					if (proj[j].x == (blocks[i].x - (pos_x)+k) && proj[j].y >blocks[i].y - box_width && proj[j].y < blocks[i].y)
 					{
-						//al_play_sample(bump, 1.4, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo4);
+						al_play_sample(bump, 1.4, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo4);
 						proj[j].live = false;
 					}
 				}
@@ -2068,7 +2133,7 @@ void Collision(Projectiles proj[], int sizeP, enemies guys[], int sizeE, int cou
 						proj[i].x<((guys[j].x - pos_x + counter) + guys[j].boundx) && proj[i].y>(guys[j].y - guys[j].boundy - 10) && proj[i].y < (guys[j].y + guys[j].boundy))
 					{
 
-						//	al_play_sample(boom, 1.6, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo1);
+						al_play_sample(boom, 1.6, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo1);
 						proj[i].live = false;
 						guys[j].alive = false;
 						shot = true;
@@ -2091,7 +2156,7 @@ bool CollideEnemy(enemies guys[], int size, int counter)
 			if (((guys[i].x - pos_x + counter) - guys[i].boundx) < (player.x + player.r) && (guys[i].x - pos_x + counter) + guys[i].boundx > (player.x - player.r) && (guys[i].y - guys[i].boundy)<(player.y + 3 * player.r) && (guys[i].y + guys[i].boundy)>(player.y - player.r))
 			{
 
-				//al_stop_sample_instance(songInstance);
+				al_stop_sample_instance(songInstance);
 				dead = true;
 
 			}

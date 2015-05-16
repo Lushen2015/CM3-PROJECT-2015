@@ -44,11 +44,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Allegro\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Allegro\include </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Allegro\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Allegro\lib </AdditionalLibraryDirectories>
       <AdditionalDependencies>allegro-5.0.10-monolith-md-debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
