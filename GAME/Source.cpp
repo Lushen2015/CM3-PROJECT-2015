@@ -15,10 +15,10 @@ enum Keys{ A, S, D, W, SPACE, L };
 int res_x = 1280;
 int res_y = 820;
 int pos_x = 0;
-int checkpoint = 0;
+int checkpoint = 10100;
 int blockNum = 0;
 const int num_proj = 5;
-int level = 1;
+int level = 3;
 int g = 1;
 
 
@@ -101,6 +101,8 @@ ALLEGRO_SAMPLE_ID *foo5 = NULL;
 ALLEGRO_SAMPLE *pause = NULL;
 ALLEGRO_SAMPLE_ID *foo6 = NULL;
 
+ALLEGRO_SAMPLE *GO = NULL;
+ALLEGRO_SAMPLE_ID *foo7 = NULL;
 
 
 ALLEGRO_SAMPLE_INSTANCE *songInstance = NULL;
@@ -254,6 +256,7 @@ int main(void)
 	int const FPS = 60;
 	bool Gamerunning = true;
 	bool deathsound = true;
+	bool GOsound = true;
 	bool gameOverDelay = false;
 	bool start = false;
 
@@ -261,7 +264,13 @@ int main(void)
 	Projectiles proj[5];
 	bool enemycheck = false;
 
+	//**********************************END GAME STUFF************************************************
+	int mMonkey = 0;
+	int mLuigi = 0;
+	int mMario = 0;
+	bool GoodGame = false;
 
+	//************************************************************************************************
 
 	bool enemycheck2 = false;
 	SetEnemies(guys, num_enemies);
@@ -273,6 +282,8 @@ int main(void)
 	int Fcount = 0;
 	int FDelay = 6;
 
+	bool slowdown = false;
+	int slownum = 0;
 
 
 
@@ -336,7 +347,7 @@ int main(void)
 	bump = al_load_sample("bump.wav");
 	die = al_load_sample("die.wav");
 	pause = al_load_sample("pause.wav");
-
+	GO = al_load_sample("GO.wav");
 	songInstance = al_create_sample_instance(song);
 	al_set_sample_instance_playmode(songInstance, ALLEGRO_PLAYMODE_LOOP);
 
@@ -484,7 +495,7 @@ int main(void)
 			case ALLEGRO_KEY_UP:
 
 				if (gameStart){
-					if (!deathPause&&!nextLevel)
+					if (!deathPause&&!nextLevel&&!GoodGame)
 					{
 						fall = false;
 						moveU = true;
@@ -508,7 +519,7 @@ int main(void)
 						pointer += 50;
 				}break;
 			case ALLEGRO_KEY_RIGHT:
-				if (!deathPause&&!nextLevel){
+				if (!deathPause&&!nextLevel&&!GoodGame){
 					moveR = true;
 					moveL = false;
 					moveU = false;
@@ -517,7 +528,7 @@ int main(void)
 				}
 				break;
 			case ALLEGRO_KEY_LEFT:
-				if (!deathPause&&!nextLevel)
+				if (!deathPause&&!nextLevel&&!GoodGame)
 				{
 					moveL = true;
 					moveR = false;
@@ -532,7 +543,7 @@ int main(void)
 				break;
 			case ALLEGRO_KEY_SPACE:
 				if (gameStart){
-					if (!deathPause&&!nextLevel){
+					if (!deathPause&&!nextLevel&&!GoodGame){
 						keys[SPACE] = true;
 						shoot(proj, num_proj);
 						//if (stage)
@@ -593,11 +604,12 @@ int main(void)
 							ISEEDEADPEOPLE(guys, num_enemies);
 							deathPause = false;
 							deathsound = true;
+							GOsound = true;
 						}
 						if (player.lives == 0)
 						{
 
-							al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);//SOME GAME OVER MESSSAGE HERE <----------------------------------------------------------------------------------------------------
+							//al_play_sample(pause, 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo6);//SOME GAME OVER MESSSAGE HERE <----------------------------------------------------------------------------------------------------
 							stage = false;
 							if (gamePause)
 							{
@@ -618,13 +630,9 @@ int main(void)
 							temp = 0;
 							gameOverDelay = true;;
 						
-							//al_draw_scaled_bitmap(loadscreen1, 0, 0, screen1W, screen1H, 0, 0, screen1W, screen1H, 0);
-							//al_draw_scaled_bitmap(gameover, 0, 0, 1280, 820, 0, 0, 1280, 820, 0); ------------------this is the game over screen
-							//al_draw_scaled_bitmap(gameoverFlash, 0, 0, 1280, 820, 0, 0, 1280, 820, 0); ------------------this is the game over screen with the press space to continue now put a delay and make them flash wherever you put the game over screen
-							//al_draw_textf(font11, al_map_rgb(255, 255, 255), 825, 360, 0, "%d", player.lives);
-							//SOME LOADING SCREEN HERE <---------------------------------------------------------------------------
+						
 						}
-						//al_stop_sample(foo);
+					
 					}
 
 				}
@@ -638,7 +646,12 @@ int main(void)
 					{
 						gameStart = true;
 						gamePause = true;
-					}
+						if (start)
+						{
+							delay = 0;
+							nextLevel = true;
+						}
+						}
 					else if (pointer == 450)
 					{//RUN THE DEMO HERE <------------------------------------------------------------------------------------------------------------
 						
@@ -652,6 +665,8 @@ int main(void)
 								player.lives = 5;
 								gamePause = true;
 								gameStart = true;
+								delay = 0;
+								nextLevel = true;
 								shot = false;
 								Apocalypse(guys, num_enemies);
 								deathPause = false;
@@ -800,7 +815,7 @@ int main(void)
 						pos_x -= keys[A] * player.ms;
 				}
 
-				if (pos_x >= 10100 && level <= 3){
+				if (pos_x >= 10100 && level <= 2){
 
 					shot = false;
 					Apocalypse(guys, num_enemies);
@@ -811,6 +826,34 @@ int main(void)
 					keys[D] = false;
 					temp = 0;
 				}
+
+				//END OF GAME THINGI
+				else if (pos_x >= 11000 && level == 3)
+				{
+					keys[D] = false;
+					keys[A] = false;
+					GoodGame = true;
+					mMonkey += 5;
+					if (mMonkey<900)
+					{
+						moveR = false;
+					}
+				}
+					if (mMonkey >= 900)
+					{
+						mLuigi+=5;
+						player.x += 5;
+						moveR = true;
+						if (mLuigi >= 1800)							//MOVING LUIGI AT END OF GAME
+						{
+							
+							mMario+=5;
+						}
+					}
+
+				
+
+				//END OF END OF GAME
 				if (nextLevel)
 				{
 					delay++;
@@ -935,7 +978,7 @@ int main(void)
 						}
 						else
 						{
-							al_draw_scaled_bitmap(imageRIGHT[3], 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
+							al_draw_scaled_bitmap(imageRIGHT[3], 0, 0, 64, 128, player.x - player.r+mLuigi, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
 							moveU = false;
 						}
 
@@ -962,12 +1005,16 @@ int main(void)
 				initSpike(spikes, num_spikes);
 				createSpike(spikes, num_spikes);
 
-
-
-				//al_draw_filled_rectangle(player.x - player.r, player.y + player.r, player.x + player.r, player.feet, al_map_rgb(0, 128, 0));
-				//al_draw_filled_rectangle(0, res_y - 50, res_x, res_y, al_map_rgb(139, 69, 19));//Ground		
-
-				//al_draw_filled_circle(player.x, player.y, player.r, al_map_rgb(0, 128, 0));//player
+				if (level != 3)
+				{
+					al_draw_filled_rectangle(10100 - pos_x + 150, res_y - 50, 10120 - pos_x + 150, 200, al_map_rgb(150, 50, 50));
+					al_draw_filled_triangle(10100 - pos_x + 150, 200, 10200 - pos_x + 150, 250, 10120 - pos_x + 150, 300, al_map_rgb(150, 50, 50));		//end stage flag
+				}
+				if (level == 3)
+				{
+					al_draw_filled_rectangle(11500 - pos_x + 450 + mMonkey, res_y - 50, 11200 - pos_x + mMonkey + 450, 600, al_map_rgb(150, 0, 0));//<-----monkey
+					al_draw_filled_rectangle(-200 + mMario, res_y - 50, -120 + mMario, 600, al_map_rgb(0, 255, 0));//<---------------------------------------mario
+				}
 				if (!deathPause){
 					//al_draw_scaled_bitmap(image, 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
 
@@ -986,6 +1033,11 @@ int main(void)
 				drawproj(proj, num_proj);
 				if (nextLevel)
 				{
+					if (level == 1)
+					{
+						al_draw_scaled_bitmap(loadscreen1, 0, 0, screen1W, screen1H, 0, 0, screen1W, screen1H, 0);
+						al_draw_textf(font11, al_map_rgb(255, 255, 255), 825, 360, 0, "%d", player.lives);
+					}
 
 					if (level == 2)
 					{
@@ -1034,9 +1086,38 @@ int main(void)
 
 			if (gameOverDelay )
 			{
+				if (GOsound)
+				{
+					al_play_sample(GO, 1.5, 0, 1, ALLEGRO_PLAYMODE_ONCE, foo7);
+					GOsound = false;
+
+				}
+				al_stop_sample_instance(songInstance);
+				al_draw_scaled_bitmap(gameover, 0, 0, 1280, 820, 0, 0, 1280, 820, 0);
+				if (!slowdown && slownum <= 30)
+				{
+					slownum++;
+					al_draw_scaled_bitmap(gameoverFlash, 0, 0, 1280, 820, 0, 0, 1280, 820, 0);
+					if (slownum >= 30)
+					{
+						slowdown = true;
+					}
+				}
+				if (slowdown)
+				{
+					slownum--;
+					if (slownum <= 0)
+					{
+						slowdown = false;
+
+					}
+				}
 				
-				al_draw_filled_rectangle(0, 0, res_x, res_y, al_map_rgb(255, 0, 0));//<------------- GAME OVER THING HERE <---------------------------------
 			}
+
+			
+
+
 			al_flip_display();
 
 			//al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -1991,6 +2072,7 @@ bool noblock(block B[], int size)
 
 void createPI(Pipe pipes[], int size)
 {
+	
 	for (int i = 0; i <= 10; i++)
 	{
 
@@ -2021,6 +2103,7 @@ void createPI(Pipe pipes[], int size)
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
+
 }
 bool checkpipe(Pipe pipes[], int size)
 {
