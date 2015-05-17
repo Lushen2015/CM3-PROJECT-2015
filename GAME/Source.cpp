@@ -1038,8 +1038,15 @@ int main(void)
 					}
 					al_draw_scaled_bitmap(imageM[currentF], 0, 0, 64, 128, -200 + mMario, res_y - 140, 64 * 0.7, 128 * 0.7, 0);//<<<<<<<<<<MARIO
 					
-					al_draw_scaled_bitmap(endgame, 0, 0, 1280,820, 0, 0, 1280, 820, 0);////////////<<<<<<<<<<<<<<<<<<<<<<<<THIS IS THE END GAME PIC SO JUST MOVE IT TO WHEREVER YOU PUT RED SCREEN
-				
+					if (-200 + mMario >= 1280)
+					{
+						al_draw_scaled_bitmap(endgame, 0, 0, 1280, 820, 0, 0, 1280, 820, 0);////////////<<<<<<<<<<<<<<<<<<<<<<<<THIS IS THE END GAME PIC SO JUST MOVE IT TO WHEREVER YOU PUT RED SCREEN
+						wait++;
+						if (wait > 500)
+							Gamerunning = false;
+					
+					}
+
 				}
 				if (!deathPause){
 					//al_draw_scaled_bitmap(image, 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
