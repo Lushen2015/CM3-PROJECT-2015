@@ -15,10 +15,10 @@ enum Keys{ A, S, D, W, SPACE, L };
 int res_x = 1280;
 int res_y = 820;
 int pos_x = 0;
-int checkpoint = 10100;
+int checkpoint = 0;
 int blockNum = 0;
 const int num_proj = 5;
-int level = 3;
+int level = 1;
 int g = 1;
 
 
