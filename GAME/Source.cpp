@@ -216,6 +216,10 @@ ALLEGRO_BITMAP *deadimage = NULL;
 ALLEGRO_BITMAP *gameover = NULL;
 ALLEGRO_BITMAP *gameoverFlash = NULL;
 
+ALLEGRO_BITMAP *koopa= NULL;
+
+ALLEGRO_BITMAP *endgame = NULL;
+
 
 
 
@@ -313,6 +317,7 @@ int main(void)
 	ALLEGRO_BITMAP *imageRIGHT[maxFrame];
 	ALLEGRO_BITMAP *imageLEFT[maxFrame];
 	ALLEGRO_BITMAP *imageUP[2];
+	ALLEGRO_BITMAP *imageM[4];
 
 
 
@@ -380,6 +385,14 @@ int main(void)
 
 	deadimage = al_load_bitmap("died.png");
 
+	imageM[0] = al_load_bitmap("MW1.png");
+	imageM[1] = al_load_bitmap("MW2.png");
+	imageM[2] = al_load_bitmap("MW3.png");
+	imageM[3] = al_load_bitmap("MW4.png");
+
+	endgame = al_load_bitmap("endgame.jpg");
+
+
 	imageRIGHT[0] = al_load_bitmap("LW1.png");
 	imageRIGHT[1] = al_load_bitmap("LW2.png");
 	imageRIGHT[2] = al_load_bitmap("LW3.png");
@@ -393,7 +406,7 @@ int main(void)
 	imageUP[0] = al_load_bitmap("LJ1.png");
 	imageUP[1] = al_load_bitmap("LJ2.png");
 
-
+	koopa = al_load_bitmap("Koopa.png");
 
 	bgimage = al_load_bitmap("back1.png");
 
@@ -1012,8 +1025,21 @@ int main(void)
 				}
 				if (level == 3)
 				{
-					al_draw_filled_rectangle(11500 - pos_x + 450 + mMonkey, res_y - 50, 11200 - pos_x + mMonkey + 450, 600, al_map_rgb(150, 0, 0));//<-----monkey
-					al_draw_filled_rectangle(-200 + mMario, res_y - 50, -120 + mMario, 600, al_map_rgb(0, 255, 0));//<---------------------------------------mario
+					al_draw_scaled_bitmap(koopa, 0, 0, 200, 200, 11500 - pos_x + 450 + mMonkey, res_y - 250, 200, 200, 0);//<<<<<<<<<<<<<<<<<<<<<MONKEY
+
+					
+					if (++Fcount >= FDelay)
+					{
+						if (++currentF >= maxFrame)
+						{
+							currentF = 0;
+							Fcount = 0;
+						}
+					}
+					al_draw_scaled_bitmap(imageM[currentF], 0, 0, 64, 128, -200 + mMario, res_y - 140, 64 * 0.7, 128 * 0.7, 0);//<<<<<<<<<<MARIO
+					
+					al_draw_scaled_bitmap(endgame, 0, 0, 1280,820, 0, 0, 1280, 820, 0);////////////<<<<<<<<<<<<<<<<<<<<<<<<THIS IS THE END GAME PIC SO JUST MOVE IT TO WHEREVER YOU PUT RED SCREEN
+				
 				}
 				if (!deathPause){
 					//al_draw_scaled_bitmap(image, 0, 0, 64, 128, player.x - player.r, player.y - player.r, 64 * 0.6, 128 * 0.6, 0);
